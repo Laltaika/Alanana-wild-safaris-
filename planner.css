@@ -16,3 +16,10 @@
 #planner .planner-three-actions{margin:8px 0 14px 0;padding-left:min(115px,23%)}
 #planner .planner-three-actions button{width:100%}
 @media(max-width:480px){#planner .planner-three-head,#planner .planner-three-list{grid-template-columns:62px minmax(0,1fr) 84px;gap:5px}#planner .planner-three-day small{font-size:.64rem}#planner .planner-three-activity select,#planner .planner-three-activity input,#planner .planner-three-price input{font-size:.8rem;padding:6px}#planner .planner-three-actions{padding-left:67px}}
+
+/* Version 23: prominent saving and priced itinerary controls */
+.planner-save-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#eaf5ee;border:2px solid #178052;border-radius:12px;padding:12px;margin:12px 0 18px}
+.planner-save-toolbar button{font-size:15px;font-weight:800;padding:13px 18px}
+#plannerSavedAt{font-weight:700;color:#155a40;font-size:13px}
+#plannerItinerary{font-weight:800;min-height:48px}
+@media(max-width:540px){.planner-save-toolbar button{width:100%}}
