@@ -117,7 +117,8 @@ function renderNewFeatures(){
  const inc=bookings.reduce((s,r)=>s+recIncome(r),0), received=payments.reduce((s,x)=>s+payUSD(x),0), expense=exp.reduce((s,x)=>s+expUSD(x),0), maint=maintenance.reduce((s,x)=>s+expUSD(x),0);
  const outstanding=bookings.reduce((s,r)=>s+Math.max(0,recIncome(r)-recReceived(r)),0);
  for(const [id,val] of Object.entries({dashIncome:money(inc),dashReceived:money(received),dashOutstanding:money(outstanding),dashExpenses:money(expense),dashMaintenance:money(maint),dashProfit:money(inc-expense-maint),dashCash:money(received-expense-maint),dashCount:bookings.filter(r=>safariStatus(r)==='ongoing').length+' / '+bookings.filter(r=>safariStatus(r)==='completed').length}))$(id).textContent=val;
- renderDashboardCalendar(m);
+ if(!$('calendarMonth').value)$('calendarMonth').value=m;
+ renderDashboardCalendar($('calendarMonth').value);
  const unpaid=db.safaris.filter(r=>recIncome(r)-recReceived(r)>0.005);
  $('dashAlertsSummary').innerHTML=`<div class="entry"><strong>${unpaid.length} outstanding booking(s) · ${money(unpaid.reduce((sum,r)=>sum+Math.max(0,recIncome(r)-recReceived(r)),0))}</strong><small>${unpaid.filter(r=>paymentStatus(r)==='Overdue').length} overdue. Includes bookings with no payment recorded.</small></div>`;
  $('dashDocumentsSummary').innerHTML=`<div class="entry"><strong>${db.safaris.length} safari invoice(s) available · ${db.payments.length} recorded payment receipt(s)</strong><small>Choose Invoices & Receipts to select a customer and print a document.</small></div>`;
@@ -161,6 +162,22 @@ document.querySelectorAll('[data-dash-open]').forEach(btn=>btn.addEventListener(
  if(target==='calendar'){$('dashCalendarSection').scrollIntoView({behavior:'smooth',block:'start'});return;}
  show(target);
 }));
+// Navigate booking calendar independently from financial dashboard month.
+function shiftCalendarMonth(delta){
+ const input=$('calendarMonth');
+ const value=/^\d{4}-\d{2}$/.test(input.value)?input.value:$('dashboardMonth').value;
+ const [year,month]=value.split('-').map(Number);
+ const target=new Date(Date.UTC(year,month-1+delta,1));
+ input.value=target.getUTCFullYear()+'-'+String(target.getUTCMonth()+1).padStart(2,'0');
+ renderDashboardCalendar(input.value);
+}
+$('calendarPrevMonth').addEventListener('click',()=>shiftCalendarMonth(-1));
+$('calendarNextMonth').addEventListener('click',()=>shiftCalendarMonth(1));
+$('calendarMonth').addEventListener('change',()=>renderDashboardCalendar($('calendarMonth').value));
+$('calendarToday').addEventListener('click',()=>{
+ const now=new Date();$('calendarMonth').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+ renderDashboardCalendar($('calendarMonth').value);
+});
 function renderDashboardCalendar(month){
  const holder=$('dashCalendar'),detail=$('dashCalendarDetail');
  if(!/^\d{4}-\d{2}$/.test(month)){holder.textContent='Choose a valid month.';detail.textContent='';return;}
