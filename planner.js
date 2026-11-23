@@ -73,27 +73,72 @@ function invoiceDestinations(days){
  }
  return places.join(' • ')||'To be confirmed';
 }
+function docFilename(p,kind){
+ const name=(customerName(p)||'Customer').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'Customer';
+ return `${name}_${kind==='itinerary'?'Itinerary':'Invoice'}.pdf`;
+}
 function documentHtml(p,kind){
  const itinerary=kind==='itinerary';
- const title=itinerary?'SAFARI ITINERARY — DAILY ACTIVITY PRICES':'CUSTOMER INVOICE';
- const fileTitle=`${(customerName(p)||'Customer').replace(/[^a-zA-Z0-9 -]/g,'').trim().replace(/\s+/g,'_')||'Customer'}_${itinerary?'Itinerary':'Invoice'}`;
- const rows=p.days.map((d,i)=>{
-  const [weekday,date]=dateAt(p.start,i);
-  const activities=d.items.map(x=>`<tr><td><b>${escape(x.name||'Other')}</b>${x.detail?' — '+escape(x.detail):''}</td><td class="price">${x.price===''?'Not priced':money(Number(x.price)||0)}</td></tr>`).join('');
-  return `<section class="day"><h3>Day ${i+1} — ${escape(weekday)}, ${escape(date)}</h3><h4>${escape(d.destination||'Route to be confirmed')}</h4>${itinerary?`<table><thead><tr><th>Activity / Service</th><th class="price">Price (USD)</th></tr></thead><tbody>${activities||'<tr><td colspan="2">Activities to be confirmed</td></tr>'}<tr class="subtotal"><td>DAY ${i+1} TOTAL (priced activities)</td><td class="price">${money(subtotal(d))}</td></tr></tbody></table>`:''}</section>`;
- }).join('');
- const price=money(invoicePrice(p));
- const usingOverride=p.selling!==''&&p.selling!=null;
+ const name=customerName(p)||'Customer';
+ const fileTitle=docFilename(p,kind).replace(/\.pdf$/,'');
  const dateRange=p.days.length?`${dateAt(p.start,0)[1]} – ${dateAt(p.start,p.days.length-1)[1]}`:'';
- const unpriced=hasUnpriced(p);
- return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(fileTitle)}</title><style>body{font-family:Arial,sans-serif;color:#163b32;margin:0;padding:32px;line-height:1.55}header{border-bottom:3px solid #16735a;padding-bottom:15px;margin-bottom:24px}h1{font-size:24px;margin:6px 0}h2{font-size:20px;margin:0 0 12px}h3{font-size:16px;margin:0}h4{font-size:14px;margin:3px 0 8px;font-weight:normal}.day{padding:15px 0;border-bottom:1px solid #ddd}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}.total{border-top:2px solid #16735a;margin-top:22px;padding-top:15px;display:flex;justify-content:space-between;font-size:21px;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{padding:8px 6px;border-bottom:1px solid #dce6e1;text-align:left;vertical-align:top}th{background:#f1f6f3}.price{text-align:right;white-space:nowrap}.subtotal{font-weight:bold;background:#f1f6f3}.note{font-size:12px;color:#576d63}footer{font-size:12px;color:#60736d;margin-top:35px}@media print{body{padding:15mm}.day{break-inside:avoid}}</style></head><body><header><img src="${document.querySelector('.brand-logo')?.src||''}" alt="Alanana Wild Safaris" style="width:165px;max-height:120px;object-fit:contain;display:block;margin-bottom:8px"><b>ALANANA WILD SAFARIS</b><h1>${title}</h1><small>Arusha, Tanzania · www.alananawildsafaris.com</small></header><div class="meta"><div><b>Customer:</b> ${escape(customerName(p)||'Not entered')}</div><div><b>Travellers:</b> ${escape(p.pax||'2')}</div><div><b>Duration:</b> ${p.days.length} days</div><div><b>Dates:</b> ${escape(dateRange)}</div><div><b>Vehicle:</b> ${escape(p.vehicleType||'Not specified')}</div><div><b>Registration:</b> ${escape(p.vehicleReg||'Not specified')}</div><div><b>Driver-guide:</b> ${escape(p.driverGuide||'Not specified')}</div></div>${itinerary?`<h2>Day-by-day programme and prices</h2>${rows}<div class="total"><span>TOTAL SAFARI ACTIVITY PRICES (USD)</span><span>${money(sum(p))}</span></div>${unpriced?'<p class="note">Some activities are not yet priced. The displayed total excludes those activities; a price of $0.00 means explicitly free.</p>':''}`:`<h2>Safari package</h2><p>Destinations: ${escape(invoiceDestinations(p.days))}</p><div class="total"><span>Total Amount (USD)</span><span>${escape(price)}</span></div>`}</body></html>`;
+ const row=(label,value)=>value?`<div class="field"><span>${label}</span><strong>${escape(String(value))}</strong></div>`:'';
+ const details=row('Customer',name)+row('Safari dates',dateRange)+row('Travellers',p.pax||'')+row('Vehicle',p.vehicleType||'')+row('Registration',p.vehicleReg||'')+row('Driver-guide',p.driverGuide||'');
+ const activities=p.days.map((d,i)=>{const [weekday,date]=dateAt(p.start,i);const items=d.items.map(x=>`<tr><td>${escape(x.name||'Other')}${x.detail?' <small>— '+escape(x.detail)+'</small>':''}</td><td class="amount">${x.price===''?'—':money(Number(x.price)||0)}</td></tr>`).join('');return `<section class="day"><h3>Day ${i+1} <span>${escape(weekday)}, ${escape(date)}</span></h3>${d.destination?`<p class="route">${escape(d.destination)}</p>`:''}<table><thead><tr><th>Activity / Service</th><th class="amount">USD</th></tr></thead><tbody>${items}<tr class="sub"><td>Daily total</td><td class="amount">${money(subtotal(d))}</td></tr></tbody></table></section>`}).join('');
+ const main=itinerary?`<h2>Day-by-day itinerary</h2>${activities}<div class="grand"><span>Safari total</span><strong>${money(sum(p))}</strong></div>`:`<div class="package"><h2>Safari package</h2><p>${escape(invoiceDestinations(p.days))}</p></div><div class="grand"><span>TOTAL DUE · USD</span><strong>${money(invoicePrice(p))}</strong></div>`;
+ return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(fileTitle)}</title><style>*{box-sizing:border-box}body{font:14px/1.5 Arial,Helvetica,sans-serif;color:#20372e;margin:0;padding:20px;background:white}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:2px solid #14694d}.head img{width:95px;max-height:65px;object-fit:contain}.head b{display:block;font-size:17px;letter-spacing:.06em}.head h1{font-size:21px;letter-spacing:.07em;margin:4px 0 2px;color:#14694d}.head small{color:#64776c}.fields{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;margin:12px 0 15px}.field{padding:5px 0;border-bottom:1px solid #e1e9e4;display:flex;flex-direction:column;gap:3px}.field span{color:#74867a;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.field strong{font-size:13px;font-weight:600}h2{font-size:15px;margin:0 0 7px;color:#20372e}.package{padding:12px;background:#f4f8f5;border-left:4px solid #14694d}.package p{margin:0;color:#40544a}.grand{margin-top:13px;background:#14694d;color:white;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;gap:20px}.grand span{font-size:13px;letter-spacing:.08em;font-weight:700}.grand strong{font-size:21px;white-space:nowrap}.day{margin:10px 0 14px;break-inside:auto}.day h3{break-after:avoid}.day h3{font-size:15px;border-bottom:2px solid #14694d;padding-bottom:4px;margin:0}.day h3 span{font-weight:normal;color:#607267;margin-left:12px}.route{margin:4px 0;color:#566c60}table{border-collapse:collapse;width:100%;font-size:13px}td,th{padding:5px 6px;border-bottom:1px solid #e1e9e4;text-align:left}th{color:#5a7165;background:#f4f8f5}.amount{text-align:right;white-space:nowrap}.sub{font-weight:bold;background:#f4f8f5}footer{margin-top:14px;padding-top:7px;border-top:1px solid #dce5df;font-size:11px;color:#73877b}@page{size:A4;margin:9mm}@media print{body{padding:0}.grand{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header class="head"><div><b>ALANANA WILD SAFARIS</b><h1>${itinerary?'SAFARI ITINERARY':'INVOICE'}</h1><small>Arusha, Tanzania · www.alananawildsafaris.com</small></div><img src="alanana-logo.jpg" alt="Alanana Wild Safaris"></header><div class="fields">${details}</div>${main}<footer>ALANANA WILD SAFARIS · Tanzania</footer></body></html>`;
 }
-function showDocument(kind){const p=get();if(!p)return;const html=documentHtml(p,kind);const frame=$('plannerDocFrame');frame.srcdoc=html;frame.title=(customerName(p)||'Customer')+' '+(kind==='itinerary'?'Itinerary':'Invoice');$('plannerDocPrint').textContent='⬇ Print / Save '+(kind==='itinerary'?'Itinerary':'Invoice')+' as PDF';$('planner').classList.add('hidden');$('plannerDocument').classList.remove('hidden');$('plannerDocument').scrollIntoView({behavior:'smooth',block:'start'});}
+// Direct, offline PDF writer. Uses the actual customer name in the downloaded file.
+// Text is wrapped to fit A4 pages; no browser print-dialog filename dependence.
+function downloadPlannerPdf(p,kind){
+ const W=595.28,H=841.89,margin=36,contentWidth=W-2*margin;
+ const encoder=new TextEncoder(), pages=[];let commands=[],y=H-38;
+ const clean=t=>String(t??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[\u2013\u2014]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/[^\x20-\x7e]/g,' ');
+ const esc=t=>clean(t).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+ const text=(t,x,yy,size=10,bold=false,color='0.14 0.23 0.19')=>{commands.push(`${color} rg BT /${bold?'F2':'F1'} ${size} Tf 1 0 0 1 ${x.toFixed(1)} ${yy.toFixed(1)} Tm (${esc(t)}) Tj ET`)};
+ const rule=(yy,color='0.82 0.88 0.84')=>commands.push(`${color} RG 0.8 w ${margin} ${yy} m ${W-margin} ${yy} l S`);
+ const block=(yy,h,color)=>commands.push(`${color} rg ${margin} ${yy} ${contentWidth} ${h} re f`);
+ const next=()=>{pages.push(commands.join('\n'));commands=[];y=H-38;};
+ const ensure=h=>{if(y-h<36){next();header(true);}};
+ const wrap=(str,max=86)=>{const words=clean(str).split(/\s+/);const lines=[];let line='';for(const word of words){if((line+' '+word).trim().length>max&&line){lines.push(line);line=word;}else line=(line+' '+word).trim();}if(line)lines.push(line);return lines.length?lines:[''];};
+ const paragraph=(t,size=10,indent=0,max=90)=>{for(const line of wrap(t,max)){ensure(13);text(line,margin+indent,y,size);y-=12;}};
+ const header=(small=false)=>{text('ALANANA WILD SAFARIS',margin,y,small?12:18,true,'0.08 0.37 0.27');y-=small?17:23;text(kind==='invoice'?'CUSTOMER INVOICE':'SAFARI ITINERARY',margin,y,small?11:15,true);y-=14;rule(y);y-=17;};
+ header();
+ const dateRange=p.days.length?`${dateAt(p.start,0)[1]} - ${dateAt(p.start,p.days.length-1)[1]}`:'';
+ const fields=[['CUSTOMER',customerName(p)||'Customer'],['SAFARI DATES',dateRange],['TRAVELLERS',p.pax||''],['VEHICLE',p.vehicleType||''],['REGISTRATION',p.vehicleReg||''],['DRIVER-GUIDE',p.driverGuide||'']];
+ for(const [label,value] of fields){if(!value)continue;ensure(17);text(label,margin,y,8,true,'0.41 0.51 0.45');text(clean(value).slice(0,78),margin+126,y,10,true);y-=17;}
+ y-=8;
+ const total=(label,amount)=>{ensure(47);block(y-35,43,'0.08 0.40 0.29');text(label,margin+15,y-17,11,true,'1 1 1');text(amount,W-margin-152,y-18,17,true,'1 1 1');y-=50;};
+ if(kind==='invoice'){
+  ensure(34);text('SAFARI PACKAGE',margin,y,14,true);y-=17;
+  paragraph(invoiceDestinations(p.days),10,0,86);y-=13;
+  total('TOTAL AMOUNT (USD)',money(invoicePrice(p)));
+ }else{
+  for(let i=0;i<p.days.length;i++){
+   const d=p.days[i],date=dateAt(p.start,i);ensure(53);text(`DAY ${i+1}  |  ${date[0]}, ${date[1]}`,margin,y,12,true,'0.08 0.37 0.27');y-=16;
+   if(d.destination){paragraph(d.destination,9,0,95);y-=3;}
+   rule(y);y-=9;
+   for(const a of d.items){const desc=clean((a.name||'Other')+(a.detail?' - '+a.detail:''));const lines=wrap(desc,70);ensure(lines.length*12+5);for(let j=0;j<lines.length;j++){text(lines[j],margin+3,y,10);if(j===0)text(a.price===''?'Not priced':money(Number(a.price)||0),W-margin-100,y,10,true);y-=12;}}
+   ensure(24);rule(y);y-=14;text('Day total',margin+3,y,10,true);text(money(subtotal(d)),W-margin-100,y,10,true);y-=24;
+  }
+  total('SAFARI TOTAL (USD)',money(sum(p)));
+ }
+ pages.push(commands.join('\n'));
+ const objs=[null,'<< /Type /Catalog /Pages 2 0 R >>',null,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'];
+ const pageIds=[];
+ for(const stream of pages){const pageId=objs.length,streamId=pageId+1;pageIds.push(pageId);objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamId} 0 R >>`);objs.push(`<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream`);}
+ objs[2]=`<< /Type /Pages /Kids [${pageIds.map(i=>i+' 0 R').join(' ')}] /Count ${pageIds.length} >>`;
+ let pdf='%PDF-1.4\n',offsets=[0];for(let i=1;i<objs.length;i++){offsets[i]=encoder.encode(pdf).length;pdf+=`${i} 0 obj\n${objs[i]}\nendobj\n`;}
+ const xref=encoder.encode(pdf).length;pdf+=`xref\n0 ${objs.length}\n0000000000 65535 f \n`;for(let i=1;i<objs.length;i++)pdf+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;pdf+=`trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+ const url=URL.createObjectURL(new Blob([pdf],{type:'application/pdf'}));const a=document.createElement('a');a.href=url;a.download=docFilename(p,kind);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+let activeDocumentKind='invoice';
+function showDocument(kind){activeDocumentKind=kind;const p=get();if(!p)return;const html=documentHtml(p,kind);const frame=$('plannerDocFrame');frame.srcdoc=html;frame.title=(customerName(p)||'Customer')+' '+(kind==='itinerary'?'Itinerary':'Invoice');$('plannerDocPrint').textContent='⬇ Download '+(kind==='itinerary'?'Itinerary':'Invoice')+' PDF';$('planner').classList.add('hidden');$('plannerDocument').classList.remove('hidden');$('plannerDocument').scrollIntoView({behavior:'smooth',block:'start'});}
 $('plannerSaveButton').addEventListener('click',()=>{if(!get())return;save();render();alert('Saved! Open this itinerary later from the Open saved itinerary / safari plan menu. Use Export Planner Backup when moving devices.');});
 $('plannerItinerary').addEventListener('click',()=>showDocument('itinerary'));
 $('plannerInvoice').addEventListener('click',()=>showDocument('invoice'));
 $('plannerDocBack').addEventListener('click',()=>{$('plannerDocument').classList.add('hidden');$('planner').classList.remove('hidden');});
-$('plannerDocPrint').addEventListener('click',()=>{const f=$('plannerDocFrame');f.contentWindow.focus();f.contentWindow.print();});
+$('plannerDocPrint').addEventListener('click',()=>{const p=get();if(p)downloadPlannerPdf(p,activeDocumentKind);});
 $('plannerExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(plans,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='alanana-safari-plans-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 $('plannerImport').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||!data.every(p=>p&&typeof p.id==='string'&&Array.isArray(p.days)&&p.days.every(d=>Array.isArray(d.items))))throw Error('Invalid backup');if(!confirm('Import safari plans? Existing planner plans with matching IDs will be replaced.'))return;const byId=new Map(plans.map(p=>[p.id,p]));data.forEach(p=>byId.set(p.id,p));plans=[...byId.values()];current=data[0]?.id||current;active=0;save();render();}catch{alert('This is not a valid Safari Planner backup.');}finally{e.target.value='';}});
 render();
