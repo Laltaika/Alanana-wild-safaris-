@@ -13,3 +13,5 @@
 
 .brand-logo{width:65px;height:65px;object-fit:contain;border-radius:7px;background:#35291e;flex-shrink:0}
 @media(max-width:420px){.brand-logo{width:48px;height:48px}}
+
+.dash-day.dash-conflict{outline:2px solid #bb4d25;background:#fff1e9!important}.dash-day small{overflow-wrap:anywhere;display:block;line-height:1.2}
