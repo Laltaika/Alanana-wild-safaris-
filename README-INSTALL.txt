@@ -39,3 +39,5 @@ IMPORTANT LIMITATIONS
 - Use an HTTPS host for installation and service worker offline caching; opening index.html directly from Files will not install as a PWA.
 
 INCOME UPDATE: New safari has Income actually received (USD). Monthly report shows expected income, received, outstanding balance and profit. Existing safaris default received to zero unless entered in the new version. Back up your records before replacing the files.
+
+NEW: Vehicle Maintenance > Service monitoring by vehicle. Select a vehicle and all time/month/year to see lifetime costs, period totals, category breakdown and dated history, including costs when no safari took place.
