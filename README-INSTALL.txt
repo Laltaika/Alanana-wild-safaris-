@@ -37,3 +37,11 @@ IMPORTANT LIMITATIONS
 - Use regular JSON backups. No login, cross-device sync, or automatic exchange rate lookup.
 - Monthly income uses the safari START month. Monthly expenses use their actual EXPENSE dates. A safari crossing months has its full hire income in the start month.
 - Use an HTTPS host for installation and service worker offline caching; opening index.html directly from Files will not install as a PWA.
+
+VERSION 3: Share PDF in Reports uses the device share sheet when supported. Otherwise saves a PDF to Files for sharing.
+
+VERSION 4: Safari tracking dashboard
+Records now has Ongoing Safaris, Completed Safaris, and All Safaris views.
+Finish Safari asks for the actual completion date and moves that trip to Completed.
+Reopen Safari returns it to Ongoing. Status persists in existing local storage.
+Always download a JSON backup before replacing published files.
