@@ -23,3 +23,5 @@
 #plannerSavedAt{font-weight:700;color:#155a40;font-size:13px}
 #plannerItinerary{font-weight:800;min-height:48px}
 @media(max-width:540px){.planner-save-toolbar button{width:100%}}
+
+.planner-vehicle-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:12px 0}.planner-vehicle-fields label{display:block}.planner-vehicle-fields input,.planner-vehicle-fields select{width:100%;box-sizing:border-box}#plannerVehicleWarning{margin:5px 0 16px;font-weight:600}
