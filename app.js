@@ -119,7 +119,8 @@ function renderNewFeatures(){
  const maintenance=db.vehicleExpenses.filter(x=>x.date?.slice(0,7)===m);
  const inc=bookings.reduce((s,r)=>s+recIncome(r),0), received=payments.reduce((s,x)=>s+payUSD(x),0), expense=exp.reduce((s,x)=>s+expUSD(x),0), maint=maintenance.reduce((s,x)=>s+expUSD(x),0);
  const outstanding=bookings.reduce((s,r)=>s+Math.max(0,recIncome(r)-recReceived(r)),0);
- for(const [id,val] of Object.entries({dashIncome:money(inc),dashReceived:money(received),dashOutstanding:money(outstanding),dashExpenses:money(expense),dashMaintenance:money(maint),dashProfit:money(inc-expense-maint),dashCash:money(received-expense-maint),dashCount:bookings.filter(r=>safariStatus(r)==='ongoing').length+' / '+bookings.filter(r=>safariStatus(r)==='completed').length}))$(id).textContent=val;
+ for(const [id,val] of Object.entries({dashIncome:money(inc),dashReceived:money(received),dashOutstanding:money(outstanding),dashExpenses:money(expense),dashMaintenance:money(maint),dashProfit:money(inc-expense-maint),dashCash:money(received-[...exp,...maintenance].filter(e=>e.source!=='personal'&&e.source!=='capital').reduce((s,e)=>s+expUSD(e),0)),dashCount:bookings.filter(r=>safariStatus(r)==='ongoing').length+' / '+bookings.filter(r=>safariStatus(r)==='completed').length}))$(id).textContent=val;
+ window.renderFinanceOverview?.();
  if(!$('calendarMonth').value)$('calendarMonth').value=m;
  renderDashboardCalendar($('calendarMonth').value);
  const unpaid=db.safaris.filter(r=>recIncome(r)-recReceived(r)>0.005);
