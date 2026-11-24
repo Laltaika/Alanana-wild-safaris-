@@ -21,3 +21,5 @@
 .brand-logo{background:white}
 
 .owner-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:8px}.owner-balance{background:#193f32;color:white;padding:12px;border-radius:8px}.owner-balance strong{display:block;font-size:24px}.owner-repay{margin:12px 0}.owner-repay summary{cursor:pointer;font-weight:bold;padding:10px;border:1px solid #bbcfc3;border-radius:8px}.finance-scroll{overflow-x:auto}.finance-scroll table{width:100%;border-collapse:collapse;font-size:13px}.finance-scroll td,.finance-scroll th{padding:7px;border-bottom:1px solid #ddd;text-align:right;white-space:nowrap}.finance-scroll td:first-child,.finance-scroll th:first-child{text-align:left}.finance-month{display:grid;grid-template-columns:75px 1fr;gap:8px;margin:8px 0}.finance-bar{height:7px;background:#e5ebe7;border-radius:3px;overflow:hidden}.finance-bar span{display:block;height:100%;background:#28734e}.finance-bar.expense span{background:#b77b36}.finance-month small{display:block;margin:2px 0 5px}
+
+.safari-status.upcoming{background:#e2edff;color:#24529a}.safari-status.cancelled{background:#fbe4e4;color:#9b2929}
