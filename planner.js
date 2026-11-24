@@ -34,7 +34,7 @@ $('plannerDayTotal').textContent=money(subtotal(d));$('plannerGrandTotal').textC
 function update(fn,rerender=true){const p=get();if(!p)return;fn(p);save();if(rerender)render();else{const d=p.days[active];$('plannerDayTotal').textContent=money(subtotal(d));$('plannerGrandTotal').textContent=money(sum(p));$('plannerProfit').textContent=p.selling===''?'Using itinerary total':money(Number(p.selling)-sum(p));}}
 $('plannerNew').addEventListener('click',()=>{const p=fresh();plans.unshift(p);current=p.id;active=0;save();render();});
 $('plannerPlanPicker').addEventListener('change',e=>{current=e.target.value;active=0;render();});
-$('plannerDelete').addEventListener('click',()=>{if(!confirm('Delete this safari plan? Your finance bookings will not be affected.'))return;plans=plans.filter(p=>p.id!==current);current=plans[0]?.id||null;active=0;save();render();});
+$('plannerDelete').addEventListener('click',async()=>{if(!await window.authorizeDeletion('Delete this safari plan? Your finance bookings will not be affected.'))return;plans=plans.filter(p=>p.id!==current);current=plans[0]?.id||null;active=0;save();render();});
 $('plannerTitle').addEventListener('change',e=>update(p=>p.title=e.target.value));
 $('plannerOtherTitle').addEventListener('input',e=>update(p=>p.otherTitle=e.target.value,false));
 $('plannerOtherTitle').addEventListener('change',render);
@@ -50,7 +50,7 @@ $('plannerStart').addEventListener('change',e=>update(p=>p.start=e.target.value)
 $('plannerSelling').addEventListener('input',e=>update(p=>p.selling=e.target.value,false));
 $('plannerDestination').addEventListener('input',e=>update(p=>p.days[active].destination=e.target.value,false));
 $('plannerAddDay').addEventListener('click',()=>update(p=>{p.days.push({id:crypto.randomUUID(),destination:'',items:[]});active=p.days.length-1;}));
-$('plannerRemoveDay').addEventListener('click',()=>{const p=get();if(p.days.length<=1)return alert('Keep at least one day.');if(!confirm('Remove Day '+(active+1)+' and its items?'))return;update(p=>{p.days.splice(active,1);active=Math.min(active,p.days.length-1);});});
+$('plannerRemoveDay').addEventListener('click',async()=>{const p=get();if(p.days.length<=1)return alert('Keep at least one day.');if(!await window.authorizeDeletion('Remove Day '+(active+1)+' and its items?'))return;update(p=>{p.days.splice(active,1);active=Math.min(active,p.days.length-1);});});
 $('plannerDays').addEventListener('click',e=>{const b=e.target.closest('[data-planner-day]');if(b){active=Number(b.dataset.plannerDay);render();}});
 $('plannerItems').addEventListener('click',e=>{const rem=e.target.closest('[data-planner-remove]');if(rem){update(p=>p.days[active].items.splice(Number(rem.dataset.plannerRemove),1));return;}if(e.target.closest('#plannerAddActivity'))update(p=>p.days[active].items.push({id:crypto.randomUUID(),name:services[0],detail:'',price:'',showPrice:true}));});
 $('plannerItems').addEventListener('change',e=>{const t=e.target;if(t.hasAttribute('data-planner-activity'))update(p=>{const x=p.days[active].items[Number(t.dataset.plannerActivity)];x.name=t.value;x.detail='';});});
